@@ -23,6 +23,38 @@
 Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule)
 {
 	//YOUR CODE HERE
+	if (image == NULL || image->image == NULL) {
+		fprintf(stderr, "Invalid image data\n");
+		return NULL;
+	}
+	if (row < 0 || row >= image->rows || col < 0 || col >= image->cols) {
+		fprintf(stderr, "Invalid pixel coordinates\n");
+		return NULL;
+	}
+	Color *pixel = malloc(sizeof(Color));
+	if (pixel == NULL) {
+		fprintf(stderr, "Error allocating memory for pixel\n");
+		return NULL;
+	}
+	// Count the number of live neighbors
+	int liveNeighbors = 0;
+	for (int i = -1; i <= 1; i++) {
+		for (int j = -1; j <= 1; j++) {
+			if (i == 0 && j == 0) continue; // Skip the cell itself
+			int neighborRow = (row + i + image->rows) % image->rows;
+			int neighborCol = (col + j + image->cols) % image->cols;
+			if (image->image[neighborRow][neighborCol].B & 1) {
+				liveNeighbors++;
+			}
+		}
+	}
+	// Determine the new state based on the rule
+	int currentState = image->image[row][col].B & 1;
+	int newState = (rule >> (currentState * 9 + liveNeighbors)) & 1;
+	pixel->R = newState ? 255 : 0;
+	pixel->G = newState ? 255 : 0;
+	pixel->B = newState ? 255 : 0;
+	return pixel;
 }
 
 //The main body of Life; given an image and a rule, computes one iteration of the Game of Life.
@@ -30,6 +62,45 @@ Color *evaluateOneCell(Image *image, int row, int col, uint32_t rule)
 Image *life(Image *image, uint32_t rule)
 {
 	//YOUR CODE HERE
+	if (image == NULL || image->image == NULL) {
+		return NULL;
+	}
+	Image *newImage = malloc(sizeof(Image));
+	if (newImage == NULL) {
+		return NULL;
+	}
+	newImage->rows = image->rows;
+	newImage->cols = image->cols;
+	newImage->image = malloc(newImage->rows * sizeof(Color *));
+	if (newImage->image == NULL) {
+		free(newImage);
+		return NULL;
+	}
+	for (uint32_t i = 0; i < newImage->rows; i++) {
+		newImage->image[i] = malloc(newImage->cols * sizeof(Color));
+		if (newImage->image[i] == NULL) {
+			for (uint32_t j = 0; j < i; j++) {
+				free(newImage->image[j]);
+			}
+			free(newImage->image);
+			free(newImage);
+			return NULL;
+		}
+		for (uint32_t j = 0; j < newImage->cols; j++) {
+			Color *pixel = evaluateOneCell(image, i, j, rule);
+			if (pixel == NULL) {
+				for (uint32_t k = 0; k <= i; k++) {
+					free(newImage->image[k]);
+				}
+				free(newImage->image);
+				free(newImage);
+				return NULL;
+			}
+			newImage->image[i][j] = *pixel;
+			free(pixel);
+		}
+	}
+	return newImage;
 }
 
 /*
@@ -50,4 +121,37 @@ You may find it useful to copy the code from steganography.c, to start.
 int main(int argc, char **argv)
 {
 	//YOUR CODE HERE
+	if (argc != 3) {
+		fprintf(stderr, "Usage: %s <filename> <rule>\n", argv[0]);
+		return -1;
+	}
+	Image *image = readData(argv[1]);
+	if (image == NULL) {
+		fprintf(stderr, "Error reading image\n");
+		return -1;
+	}
+	uint32_t rule = strtol(argv[2], NULL, 16);
+	if (rule == 0 && argv[2][0] != '0') {
+		fprintf(stderr, "Invalid rule format\n");
+		free(image);
+		return -1;
+	}
+	Image *newImage = life(image, rule);
+	if (newImage == NULL) {
+		fprintf(stderr, "Error computing next iteration\n");
+		free(image);
+		return -1;
+	}
+	writeData(newImage);
+	for (uint32_t i = 0; i < newImage->rows; i++) {
+		free(newImage->image[i]);
+	}
+	free(newImage->image);
+	free(newImage);
+	for (uint32_t i = 0; i < image->rows; i++) {
+		free(image->image[i]);
+	}
+	free(image->image);
+	free(image);
+	return 0;
 }
