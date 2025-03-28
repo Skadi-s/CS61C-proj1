@@ -125,11 +125,13 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Usage: %s <filename> <rule>\n", argv[0]);
 		return -1;
 	}
+	
 	Image *image = readData(argv[1]);
 	if (image == NULL) {
 		fprintf(stderr, "Error reading image\n");
 		return -1;
 	}
+	
 	uint32_t rule = strtol(argv[2], NULL, 16);
 	if (rule == 0 && argv[2][0] != '0') {
 		fprintf(stderr, "Invalid rule format\n");
