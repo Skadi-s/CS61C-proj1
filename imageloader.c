@@ -100,7 +100,13 @@ void writeData(Image *image)
 	printf("255\n");
 	for (uint32_t i = 0; i < image->rows; i++) {
 		for (uint32_t j = 0; j < image->cols; j++) {
-			printf("%hhu %hhu %hhu ", image->image[i][j].R, image->image[i][j].G, image->image[i][j].B);
+			// Each of the R, G and B values should be formatted to have 3 characters, with a space between them.
+			// There should be three spaces between columns.
+			// Do not have any extraneous whitespace characters at the end of the row.
+			printf("%3hhu %3hhu %3hhu", image->image[i][j].R, image->image[i][j].G, image->image[i][j].B);
+			if (j < image->cols - 1) {
+				printf("   "); // Three spaces between columns
+			}
 		}
 		printf("\n");
 	}
